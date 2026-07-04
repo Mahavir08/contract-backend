@@ -2,9 +2,9 @@
 #
 # Deploy the Contract Operations Console to Google Cloud Run + Cloud SQL.
 # Prerequisites: gcloud CLI authenticated (`gcloud auth login`), a billing-enabled
-# project, and the frontend repo cloned as a sibling directory (../frontend).
+# project, and the frontend repo cloned as a sibling directory (../contract-frontend).
 #
-# Usage (from the backend repo root):
+# Usage (from the contract-backend repo root):
 #   PROJECT_ID=my-proj REGION=us-central1 DB_PASSWORD=supersecret ./deploy/gcp-deploy.sh
 #
 set -euo pipefail
@@ -54,7 +54,7 @@ BACKEND_URL="$(gcloud run services describe contracts-backend --region "$REGION"
 echo "Backend URL: $BACKEND_URL"
 
 echo "==> Building & deploying frontend (NEXT_PUBLIC_* baked in at build time)"
-gcloud builds submit ../frontend \
+gcloud builds submit ../contract-frontend \
   --config=/dev/stdin <<EOF
 steps:
   - name: gcr.io/cloud-builders/docker

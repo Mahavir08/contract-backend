@@ -41,10 +41,10 @@ Next.js 16 (frontend)  ──REST (X-Org-Id header)──▶  Express API ──
 ### Repositories
 
 The project is split into two repos, expected to be cloned **side by side**
-(the compose file and deploy script reference the frontend as `../frontend`):
+(the compose file and deploy script reference the frontend as `../contract-frontend`):
 
-- **backend** (this repo) — Express API, Prisma schema, Docker Compose stack, deploy script, docs
-- **frontend** — Next.js app
+- **contract-backend** (this repo) — Express API, Prisma schema, Docker Compose stack, deploy script, docs
+- **contract-frontend** — Next.js app
 
 ### Project structure (this repo)
 
@@ -72,9 +72,9 @@ The project is split into two repos, expected to be cloned **side by side**
 Requires Docker, with both repos cloned as siblings:
 
 ```bash
-git clone <backend-repo-url> backend
-git clone <frontend-repo-url> frontend
-cd backend
+git clone <backend-repo-url> contract-backend
+git clone <frontend-repo-url> contract-frontend
+cd contract-backend
 docker compose up --build
 ```
 
@@ -104,7 +104,7 @@ npm run dev                   # API on http://localhost:4000
 ### 2. Frontend (in a second terminal, from the frontend repo)
 
 ```bash
-cd ../frontend
+cd ../contract-frontend
 cp .env.local.example .env.local
 npm install
 npm run dev                   # app on http://localhost:3000

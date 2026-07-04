@@ -1,6 +1,6 @@
 # One-command local stack: Postgres + backend API + Next.js frontend.
-# Run from this (backend) repo root, with the frontend repo cloned as a
-# sibling directory named "frontend" (../frontend):
+# Run from this (contract-backend) repo root, with the frontend repo cloned as a
+# sibling directory named "contract-frontend" (../contract-frontend):
 #   docker compose up --build
 # Frontend: http://localhost:3000   API: http://localhost:4000   Docs: http://localhost:4000/api/docs
 services:
@@ -40,7 +40,7 @@ services:
 
   frontend:
     build:
-      context: ../frontend
+      context: ../contract-frontend
       args:
         # NEXT_PUBLIC_* are baked in at build time and used by the browser,
         # so they must point at the host-accessible API URL.

@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "contract-backend",
   "version": "1.0.0",
   "description": "Contract Operations Console - REST API",
   "main": "dist/src/index.js",

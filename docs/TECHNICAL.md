@@ -6,12 +6,12 @@ how the browser establishes and maintains its socket connection, and *why* the d
 efficient. It is intentionally lower-level than the top-level [`README.md`](../README.md);
 read that first for the product overview.
 
-- **Frontend:** Next.js 16 (App Router, React 19) — `frontend/src/` (separate repo)
-- **Backend:** Express 5 + Socket.IO 4 (TypeScript) — `backend/src/` (this repo)
+- **Frontend:** Next.js 16 (App Router, React 19) — `frontend/src/` (separate repo: **contract-frontend**)
+- **Backend:** Express 5 + Socket.IO 4 (TypeScript) — `backend/src/` (this repo: **contract-backend**)
 - **Transport:** REST for commands/queries, WebSocket (Socket.IO) for live push
 
-> Paths prefixed `frontend/` refer to the frontend repository; paths prefixed
-> `backend/` refer to this repository's root.
+> Paths prefixed `frontend/` refer to the frontend repository (`contract-frontend`); paths
+> prefixed `backend/` refer to this repository's (`contract-backend`) root.
 
 ```
 ┌────────────────────────┐        REST  (X-Org-Id header)        ┌────────────────────────┐
