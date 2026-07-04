@@ -79,7 +79,7 @@ of the above.
 
 ### Seed data
 
-Two organisations (**Acme Corporation**, **Globex Industries**) and five contracts spanning
+Two organisations (**Manchester United**, **Liverpool**) and five contracts spanning
 all three statuses, each with matching audit history — enough to demonstrate isolation,
 search, workflow, and real-time out of the box.
 

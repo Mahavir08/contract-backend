@@ -32,11 +32,11 @@ async function main() {
   await prisma.contract.deleteMany();
   await prisma.organisation.deleteMany();
 
-  const acme = await prisma.organisation.create({
-    data: { name: "Acme Corporation", slug: "acme" },
+  const manUtd = await prisma.organisation.create({
+    data: { name: "Manchester United", slug: "manchester-united" },
   });
-  const globex = await prisma.organisation.create({
-    data: { name: "Globex Industries", slug: "globex" },
+  const liverpool = await prisma.organisation.create({
+    data: { name: "Liverpool", slug: "liverpool" },
   });
 
   const seeds: Array<{
@@ -48,7 +48,7 @@ async function main() {
     items: SeedItem[];
   }> = [
     {
-      org: acme,
+      org: manUtd,
       clientName: "Northwind Traders",
       poRefNo: "PO-1001",
       poDate: "2026-01-15",
@@ -58,7 +58,7 @@ async function main() {
       ],
     },
     {
-      org: acme,
+      org: manUtd,
       clientName: "Northwind Logistics",
       poRefNo: "PO-1002",
       poDate: "2026-02-02",
@@ -69,7 +69,7 @@ async function main() {
       ],
     },
     {
-      org: acme,
+      org: manUtd,
       clientName: "Contoso Ltd",
       poRefNo: "PO-1003",
       poDate: "2025-12-10",
@@ -79,7 +79,7 @@ async function main() {
       ],
     },
     {
-      org: globex,
+      org: liverpool,
       clientName: "Initech",
       poRefNo: "PO-2001",
       poDate: "2026-03-05",
@@ -89,7 +89,7 @@ async function main() {
       ],
     },
     {
-      org: globex,
+      org: liverpool,
       clientName: "Stark Industries",
       poRefNo: "PO-2002",
       poDate: "2026-03-20",

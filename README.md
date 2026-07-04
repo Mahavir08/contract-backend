@@ -74,6 +74,29 @@ Requires Docker, with both repos cloned as siblings:
 ```bash
 git clone <backend-repo-url> contract-backend
 git clone <frontend-repo-url> contract-frontend
+```
+
+### 0. Environment files (required — `.env` / `.env.local` are not committed)
+
+The real env files are git-ignored, so create them from the examples in **both** repos
+before bringing the stack up:
+
+```bash
+# backend
+cd contract-backend
+cp .env.example .env              # Windows (PowerShell): copy .env.example .env
+
+# frontend
+cd ../contract-frontend
+cp .env.local.example .env.local  # Windows (PowerShell): copy .env.local.example .env.local
+```
+
+The compose file sets its own container-level environment for the services, but the env
+files are still needed for anything you run outside compose (Prisma CLI, tests, local dev).
+
+### 1. Start the stack
+
+```bash
 cd contract-backend
 docker compose up --build
 ```
@@ -91,24 +114,56 @@ both services:
 
 Requires Node.js 20+ and a local PostgreSQL 14+.
 
-### 1. Backend (from this repo's root)
+### 1. Database user & database
+
+Create the Postgres user/password and database that `DATABASE_URL` connects with.
+Open a `psql` shell as a superuser (`psql -U postgres`; on Windows use the **SQL Shell (psql)**
+that ships with the Postgres installer) and run:
+
+```sql
+CREATE USER contracts_user WITH PASSWORD 'contracts_pass';
+CREATE DATABASE contracts OWNER contracts_user;
+GRANT ALL PRIVILEGES ON DATABASE contracts TO contracts_user;
+```
+
+Then point `DATABASE_URL` in `.env` at those credentials, e.g.:
+
+```
+DATABASE_URL="postgresql://contracts_user:contracts_pass@localhost:5432/contracts?schema=public"
+```
+
+(If you prefer to reuse the default `postgres` superuser, just create the `contracts`
+database and keep the default URL from `.env.example`.)
+
+### 2. Backend (from this repo's root)
 
 ```bash
-cp .env.example .env          # adjust DATABASE_URL if needed
+cp .env.example .env          # Windows: copy .env.example .env — then adjust DATABASE_URL
 npm install
+npx prisma generate           # generate the Prisma client (required — on Windows the
+                              # postinstall generation often doesn't run, so do this explicitly)
 npm run prisma:migrate:dev    # create schema
 npm run prisma:seed           # seed 2 orgs + 5 contracts
 npm run dev                   # API on http://localhost:4000
 ```
 
-### 2. Frontend (in a second terminal, from the frontend repo)
+### 3. Frontend (in a second terminal, from the frontend repo)
 
 ```bash
 cd ../contract-frontend
-cp .env.local.example .env.local
+cp .env.local.example .env.local   # Windows: copy .env.local.example .env.local
 npm install
 npm run dev                   # app on http://localhost:3000
 ```
+
+### Windows notes
+
+- `.env` / `.env.local` are **not** committed — always create them from the `*.example`
+  files first (see above).
+- Run `npx prisma generate` after `npm install` and **before** migrating/seeding; skipping
+  it on Windows typically fails with `@prisma/client did not initialize yet`.
+- Make sure the Postgres service is running and the user/password from step 1 match
+  `DATABASE_URL` — a mismatch shows up as Prisma error `P1000` (authentication failed).
 
 ---
 
@@ -233,5 +288,5 @@ run automatically on container boot (`SEED_ON_START=true`).
 
 ## Seed data
 
-Seeding creates 2 organisations (**Acme Corporation**, **Globex Industries**) and 5 contracts
+Seeding creates 2 organisations (**Manchester United**, **Liverpool**) and 5 contracts
 spanning all statuses (`DRAFT`, `FINALIZED`, `ARCHIVED`), each with a matching audit history.

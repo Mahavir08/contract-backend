@@ -117,8 +117,8 @@ export function emitToOrg(orgId, event, payload) {
 
 **How tenant isolation works on the wire.** Every client is placed into a
 [Socket.IO room](https://socket.io/docs/v4/rooms/) named `org:<orgId>` when it emits `join`.
-Broadcasts go through `emitToOrg()`, which targets `io.to("org:<id>")` — so an event for Acme
-is *never* delivered to a socket that only joined Globex's room. The room mechanism is the
+Broadcasts go through `emitToOrg()`, which targets `io.to("org:<id>")` — so an event for Manchester United
+is *never* delivered to a socket that only joined Liverpool's room. The room mechanism is the
 real-time counterpart of the REST `X-Org-Id` scoping: both enforce the same tenant boundary.
 
 **Why a module-level singleton `io`?** The service layer (`services/contracts.ts`) needs to
