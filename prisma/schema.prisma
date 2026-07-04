@@ -1,0 +1,92 @@
+// Contract Operations Console — data model
+// Multi-tenant: every Contract / ContractEvent / Attachment is scoped by orgId.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ContractStatus {
+  DRAFT
+  FINALIZED
+  ARCHIVED
+}
+
+enum EventType {
+  CREATED
+  UPDATED
+  STATUS_CHANGED
+  DELETED
+}
+
+model Organisation {
+  id        String     @id @default(uuid())
+  name      String
+  slug      String     @unique
+  createdAt DateTime   @default(now())
+  contracts Contract[]
+
+  @@map("organisations")
+}
+
+model Contract {
+  id         String         @id @default(uuid())
+  orgId      String
+  org        Organisation   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  clientName String
+  poRefNo    String
+  poDate     DateTime       @db.Date
+  status     ContractStatus @default(DRAFT)
+  // Full validated contract payload (required schema) stored as JSONB.
+  fieldData  Json
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  events      ContractEvent[]
+  attachments Attachment[]
+
+  // Efficient org-scoped filtering by status and lookups by client name.
+  @@index([orgId, status])
+  @@index([orgId, clientName])
+  @@index([orgId, createdAt])
+  @@map("contracts")
+}
+
+model ContractEvent {
+  id         String          @id @default(uuid())
+  // orgId kept on the event so the audit trail survives even after the contract row is gone.
+  orgId      String
+  // Nullable so a deleted (draft) contract's audit events are retained (SetNull).
+  contractId String?
+  contract   Contract?       @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  eventType  EventType
+  fromStatus ContractStatus?
+  toStatus   ContractStatus?
+  // Snapshot / diff of what changed (field-level for UPDATED, payload for CREATED, etc.)
+  changes    Json?
+  actor      String          @default("system")
+  createdAt  DateTime        @default(now())
+
+  @@index([orgId])
+  @@index([contractId, createdAt])
+  @@map("contract_events")
+}
+
+model Attachment {
+  id          String   @id @default(uuid())
+  orgId       String
+  contractId  String
+  contract    Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  fileName    String
+  contentType String
+  size        Int
+  // Local path (dev) or GCS object key (prod), resolved by STORAGE_DRIVER.
+  storageKey  String
+  createdAt   DateTime @default(now())
+
+  @@index([contractId])
+  @@map("attachments")
+}

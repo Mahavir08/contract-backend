@@ -1,0 +1,56 @@
+# One-command local stack: Postgres + backend API + Next.js frontend.
+# Run from this (backend) repo root, with the frontend repo cloned as a
+# sibling directory named "frontend" (../frontend):
+#   docker compose up --build
+# Frontend: http://localhost:3000   API: http://localhost:4000   Docs: http://localhost:4000/api/docs
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: contracts
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/contracts?schema=public
+      PORT: "4000"
+      CORS_ORIGIN: http://localhost:3000
+      STORAGE_DRIVER: local
+      LOCAL_UPLOAD_DIR: /app/uploads
+      # "true" seeds only when the DB is empty; "always" re-seeds on every boot.
+      SEED_ON_START: "true"
+    ports:
+      - "4000:4000"
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ../frontend
+      args:
+        # NEXT_PUBLIC_* are baked in at build time and used by the browser,
+        # so they must point at the host-accessible API URL.
+        NEXT_PUBLIC_API_URL: http://localhost:4000
+        NEXT_PUBLIC_SOCKET_URL: http://localhost:4000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  uploads:

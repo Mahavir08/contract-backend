@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+
+# build artifacts
+/dist
+
+# local attachment uploads
+/uploads
+
+# testing
+/coverage
+
+# env files (can opt-in for committing if needed)
+.env*
+!.env.example
+
+# misc
+.DS_Store
+npm-debug.log*
+*.tsbuildinfo
+
+.claude
+.env.example
