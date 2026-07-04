@@ -144,31 +144,27 @@ Requires Node.js 20+ and a local PostgreSQL 14+.
 
 ### 1. Database user & database
 
-Create the Postgres user/password and database that `DATABASE_URL` connects with.
-Open a `psql` shell as a superuser (`psql -U postgres`; on Windows use the **SQL Shell (psql)**
-that ships with the Postgres installer) and run:
+`DATABASE_URL` in `.env` connects as user `postgres` with password `postgres`, so make sure
+that user has that password, then create the `contracts` database. Open a `psql` shell
+(`psql -U postgres`; on Windows use the **SQL Shell (psql)** that ships with the Postgres
+installer) and run:
 
 ```sql
-CREATE USER contracts_user WITH PASSWORD 'contracts_pass';
-CREATE DATABASE contracts OWNER contracts_user;
-GRANT ALL PRIVILEGES ON DATABASE contracts TO contracts_user;
+ALTER USER postgres WITH PASSWORD 'postgres';
+CREATE DATABASE contracts;
 ```
 
-Then point `DATABASE_URL` in `.env` at those credentials, e.g.:
-
-```
-DATABASE_URL="postgresql://contracts_user:contracts_pass@localhost:5432/contracts?schema=public"
-```
-
-(If you prefer to reuse the default `postgres` superuser, just create the `contracts`
-database and keep the default `DATABASE_URL` shown in the
-[Environment files](#environment-files-create-these-first) section.)
+This matches the default `DATABASE_URL` from the
+[Environment files](#environment-files-create-these-first) section —
+`postgresql://postgres:postgres@localhost:5432/contracts?schema=public` — so no edits to
+`.env` are needed. (If your Postgres uses a different user or password, update
+`DATABASE_URL` accordingly.)
 
 ### 2. Backend (from this repo's root)
 
 First create `.env` and paste the backend content from the
-[Environment files](#environment-files-create-these-first) section (adjust `DATABASE_URL`
-to the user/password from step 1), then:
+[Environment files](#environment-files-create-these-first) section (the default
+`DATABASE_URL` already matches the `postgres`/`postgres` setup from step 1), then:
 
 ```bash
 npm install
@@ -197,8 +193,9 @@ npm run dev                   # app on http://localhost:3000
   [Environment files](#environment-files-create-these-first) section.
 - Run `npx prisma generate` after `npm install` and **before** migrating/seeding; skipping
   it on Windows typically fails with `@prisma/client did not initialize yet`.
-- Make sure the Postgres service is running and the user/password from step 1 match
-  `DATABASE_URL` — a mismatch shows up as Prisma error `P1000` (authentication failed).
+- Make sure the Postgres service is running and the `postgres` user's password is
+  `postgres` (step 1) so it matches `DATABASE_URL` — a mismatch shows up as Prisma error
+  `P1000` (authentication failed).
 
 ---
 
