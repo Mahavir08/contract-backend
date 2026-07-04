@@ -67,36 +67,64 @@ The project is split into two repos, expected to be cloned **side by side**
 
 ---
 
+## Environment files (create these first)
+
+No `.env*` files are committed to either repo, so you must create them by hand before
+running anything (Docker or local). Create the empty file, then paste in the content below.
+
+### Backend — `.env` (in the `contract-backend` repo root)
+
+```bash
+touch .env        # Windows (PowerShell): New-Item .env   |   (cmd): type nul > .env
+```
+
+Paste this into `.env`:
+
+```env
+# PostgreSQL connection string (match your local DB user/password)
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/contracts?schema=public"
+
+# API server port
+PORT=4000
+
+# Comma-separated list of allowed frontend origins (or * for any)
+CORS_ORIGIN="http://localhost:3000"
+
+# Attachment storage: "local" (dev) or "gcs" (production)
+STORAGE_DRIVER=local
+# Local directory for uploaded PDFs when STORAGE_DRIVER=local
+LOCAL_UPLOAD_DIR="./uploads"
+# GCS bucket name when STORAGE_DRIVER=gcs
+GCS_BUCKET=""
+```
+
+### Frontend — `.env.local` (in the `contract-frontend` repo root)
+
+```bash
+touch .env.local  # Windows (PowerShell): New-Item .env.local   |   (cmd): type nul > .env.local
+```
+
+Paste this into `.env.local`:
+
+```env
+# Base URL of the backend REST API (used by the browser)
+NEXT_PUBLIC_API_URL=http://localhost:4000
+# Base URL of the Socket.IO server (usually same as the API)
+NEXT_PUBLIC_SOCKET_URL=http://localhost:4000
+```
+
+> The compose file sets its own container-level environment for the services, but these
+> files are still needed for anything you run outside compose (Prisma CLI, tests, local dev).
+
+---
+
 ## Quick start (Docker Compose — recommended)
 
-Requires Docker, with both repos cloned as siblings:
+Requires Docker, with both repos cloned as siblings and the env files created as shown above:
 
 ```bash
 git clone <backend-repo-url> contract-backend
 git clone <frontend-repo-url> contract-frontend
-```
-
-### 0. Environment files (required — `.env` / `.env.local` are not committed)
-
-The real env files are git-ignored, so create them from the examples in **both** repos
-before bringing the stack up:
-
-```bash
-# backend
-cd contract-backend
-cp .env.example .env              # Windows (PowerShell): copy .env.example .env
-
-# frontend
-cd ../contract-frontend
-cp .env.local.example .env.local  # Windows (PowerShell): copy .env.local.example .env.local
-```
-
-The compose file sets its own container-level environment for the services, but the env
-files are still needed for anything you run outside compose (Prisma CLI, tests, local dev).
-
-### 1. Start the stack
-
-```bash
 cd contract-backend
 docker compose up --build
 ```
@@ -133,12 +161,16 @@ DATABASE_URL="postgresql://contracts_user:contracts_pass@localhost:5432/contract
 ```
 
 (If you prefer to reuse the default `postgres` superuser, just create the `contracts`
-database and keep the default URL from `.env.example`.)
+database and keep the default `DATABASE_URL` shown in the
+[Environment files](#environment-files-create-these-first) section.)
 
 ### 2. Backend (from this repo's root)
 
+First create `.env` and paste the backend content from the
+[Environment files](#environment-files-create-these-first) section (adjust `DATABASE_URL`
+to the user/password from step 1), then:
+
 ```bash
-cp .env.example .env          # Windows: copy .env.example .env — then adjust DATABASE_URL
 npm install
 npx prisma generate           # generate the Prisma client (required — on Windows the
                               # postinstall generation often doesn't run, so do this explicitly)
@@ -149,17 +181,20 @@ npm run dev                   # API on http://localhost:4000
 
 ### 3. Frontend (in a second terminal, from the frontend repo)
 
+First create `.env.local` and paste the frontend content from the
+[Environment files](#environment-files-create-these-first) section, then:
+
 ```bash
 cd ../contract-frontend
-cp .env.local.example .env.local   # Windows: copy .env.local.example .env.local
 npm install
 npm run dev                   # app on http://localhost:3000
 ```
 
 ### Windows notes
 
-- `.env` / `.env.local` are **not** committed — always create them from the `*.example`
-  files first (see above).
+- No `.env*` files are committed — create `.env` (backend) and `.env.local` (frontend) by
+  hand and paste the content from the
+  [Environment files](#environment-files-create-these-first) section.
 - Run `npx prisma generate` after `npm install` and **before** migrating/seeding; skipping
   it on Windows typically fails with `@prisma/client did not initialize yet`.
 - Make sure the Postgres service is running and the user/password from step 1 match
