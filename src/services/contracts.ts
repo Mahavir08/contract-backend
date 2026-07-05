@@ -16,7 +16,8 @@ export type ListParams = {
 
 // Org-scoped search with server-side filtering + pagination.
 export async function listContracts(orgId: string, params: ListParams) {
-  const where: Prisma.ContractWhereInput = { orgId };
+  // Soft-deleted contracts are hidden from the default listing.
+  const where: Prisma.ContractWhereInput = { orgId, deletedAt: null };
   if (params.status) where.status = params.status;
   if (params.clientName) {
     where.clientName = { contains: params.clientName, mode: "insensitive" };
@@ -40,8 +41,12 @@ export async function listContracts(orgId: string, params: ListParams) {
 }
 
 // Fetch a single contract, enforcing org ownership (404 if not in this org).
-export async function getContract(orgId: string, id: string) {
-  const contract = await prisma.contract.findFirst({ where: { id, orgId } });
+// Soft-deleted contracts are treated as absent unless includeDeleted is set
+// (e.g. so their audit trail stays viewable).
+export async function getContract(orgId: string, id: string, includeDeleted = false) {
+  const where: Prisma.ContractWhereInput = { id, orgId };
+  if (!includeDeleted) where.deletedAt = null;
+  const contract = await prisma.contract.findFirst({ where });
   if (!contract) throw notFound("Contract not found");
   return contract;
 }
@@ -125,27 +130,39 @@ export async function changeStatus(orgId: string, id: string, to: ContractStatus
   return updated;
 }
 
-// Delete is only permitted while the contract is a DRAFT.
+// Soft delete: only permitted while the contract is a DRAFT. The row is retained
+// with deletedAt set so the contract (and its audit trail) stays traceable in
+// contract_events; getContract already treats a soft-deleted row as absent, so a
+// repeat delete resolves to 404.
 export async function deleteContract(orgId: string, id: string) {
   const existing = await getContract(orgId, id);
   if (existing.status !== "DRAFT") {
     throw conflict("Only DRAFT contracts can be deleted");
   }
   await prisma.$transaction(async (tx) => {
-    // Record the audit event first; SetNull on the FK preserves it after delete.
+    // Move to the terminal DELETED status and stamp deletedAt; the row survives.
+    await tx.contract.update({
+      where: { id },
+      data: { status: "DELETED", deletedAt: new Date() },
+    });
+    // Recorded as a real DRAFT -> DELETED transition (toStatus = DELETED). A
+    // snapshot is retained and contractId is preserved (no SetNull fires), so the
+    // deletion is fully traceable from contract_events.
     await recordEvent(tx, {
       orgId,
       contractId: id,
       eventType: "DELETED",
       fromStatus: existing.status,
+      toStatus: "DELETED",
+      changes: { snapshot: existing.fieldData as Prisma.InputJsonValue },
     });
-    await tx.contract.delete({ where: { id } });
   });
   emitToOrg(orgId, "contract:deleted", { id });
 }
 
 export async function listEvents(orgId: string, id: string) {
-  await getContract(orgId, id); // ensures the contract belongs to the org
+  // includeDeleted: a contract's audit history remains viewable after soft delete.
+  await getContract(orgId, id, true); // ensures the contract belongs to the org
   return prisma.contractEvent.findMany({
     where: { orgId, contractId: id },
     orderBy: { createdAt: "asc" },

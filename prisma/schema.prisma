@@ -13,6 +13,9 @@ enum ContractStatus {
   DRAFT
   FINALIZED
   ARCHIVED
+  // Terminal soft-delete state. Set alongside Contract.deletedAt so a deletion
+  // is recorded as a real DRAFT -> DELETED transition in contract_events.
+  DELETED
 }
 
 enum EventType {
@@ -44,6 +47,9 @@ model Contract {
   fieldData  Json
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
+  // Soft delete: non-null once the contract is deleted. The row (and its audit
+  // trail) is retained so deletions stay traceable via contract_events.
+  deletedAt  DateTime?
 
   events      ContractEvent[]
   attachments Attachment[]
@@ -52,6 +58,8 @@ model Contract {
   @@index([orgId, status])
   @@index([orgId, clientName])
   @@index([orgId, createdAt])
+  // Speeds up excluding soft-deleted rows from the default listing.
+  @@index([orgId, deletedAt])
   @@map("contracts")
 }
 
@@ -59,7 +67,8 @@ model ContractEvent {
   id         String          @id @default(uuid())
   // orgId kept on the event so the audit trail survives even after the contract row is gone.
   orgId      String
-  // Nullable so a deleted (draft) contract's audit events are retained (SetNull).
+  // Nullable to preserve legacy hard-deleted rows' events (SetNull). With soft
+  // delete the contract row survives, so DELETED events keep their contractId.
   contractId String?
   contract   Contract?       @relation(fields: [contractId], references: [id], onDelete: SetNull)
   eventType  EventType

@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "ContractStatus" AS ENUM ('DRAFT', 'FINALIZED', 'ARCHIVED');
+CREATE TYPE "ContractStatus" AS ENUM ('DRAFT', 'FINALIZED', 'ARCHIVED', 'DELETED');
 
 -- CreateEnum
 CREATE TYPE "EventType" AS ENUM ('CREATED', 'UPDATED', 'STATUS_CHANGED', 'DELETED');
@@ -25,6 +25,7 @@ CREATE TABLE "contracts" (
     "fieldData" JSONB NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "contracts_pkey" PRIMARY KEY ("id")
 );
@@ -69,6 +70,9 @@ CREATE INDEX "contracts_orgId_clientName_idx" ON "contracts"("orgId", "clientNam
 
 -- CreateIndex
 CREATE INDEX "contracts_orgId_createdAt_idx" ON "contracts"("orgId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "contracts_orgId_deletedAt_idx" ON "contracts"("orgId", "deletedAt");
 
 -- CreateIndex
 CREATE INDEX "contract_events_orgId_idx" ON "contract_events"("orgId");

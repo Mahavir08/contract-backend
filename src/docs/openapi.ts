@@ -115,7 +115,8 @@ export const openapiSpec = {
         responses: { "200": { description: "OK" }, "409": { description: "Not a draft" } },
       },
       delete: {
-        summary: "Delete a DRAFT contract",
+        summary: "Soft-delete a DRAFT contract",
+        description: "Marks the contract deleted (retains the row and audit trail); it is then hidden from reads and listings but remains traceable via contract_events.",
         parameters: [{ $ref: "#/components/parameters/OrgId" }, { name: "id", in: "path", required: true, schema: { type: "string" } }],
         responses: { "204": { description: "Deleted" }, "409": { description: "Not a draft" } },
       },

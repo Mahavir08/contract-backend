@@ -102,12 +102,31 @@ describe("status workflow", () => {
     expect(types.filter((t: string) => t === "STATUS_CHANGED").length).toBe(2);
   });
 
-  it("deletes a draft (204) and keeps the audit event", async () => {
+  it("soft-deletes a draft (204), hides it, but retains a traceable audit event", async () => {
     const created = await request(app).post("/api/contracts").set("x-org-id", orgA).send(validPayload);
     const id = created.body.id;
     await request(app).delete(`/api/contracts/${id}`).set("x-org-id", orgA).expect(204);
+
+    // Hidden from reads and the default listing...
     await request(app).get(`/api/contracts/${id}`).set("x-org-id", orgA).expect(404);
-    const deletedEvents = await prisma.contractEvent.findMany({ where: { eventType: "DELETED" } });
-    expect(deletedEvents.length).toBeGreaterThan(0);
+    const list = await request(app).get("/api/contracts").set("x-org-id", orgA);
+    expect(list.body.data.some((c: { id: string }) => c.id === id)).toBe(false);
+
+    // ...but the row is retained (soft delete), not removed.
+    const row = await prisma.contract.findUnique({ where: { id } });
+    expect(row?.deletedAt).toBeInstanceOf(Date);
+
+    // The deletion is traceable from contract_events with the contractId preserved
+    // and recorded as a DRAFT -> DELETED transition (toStatus = DELETED).
+    const deletedEvents = await prisma.contractEvent.findMany({
+      where: { eventType: "DELETED", contractId: id },
+    });
+    expect(deletedEvents.length).toBe(1);
+    expect(deletedEvents[0].fromStatus).toBe("DRAFT");
+    expect(deletedEvents[0].toStatus).toBe("DELETED");
+
+    // The audit history stays viewable after deletion.
+    const events = await request(app).get(`/api/contracts/${id}/events`).set("x-org-id", orgA).expect(200);
+    expect(events.body.map((e: { eventType: string }) => e.eventType)).toContain("DELETED");
   });
 });
