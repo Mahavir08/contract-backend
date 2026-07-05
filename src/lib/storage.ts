@@ -10,6 +10,7 @@ export type StoredFile = { storageKey: string };
 export interface Storage {
   save(orgId: string, contractId: string, fileName: string, contentType: string, buffer: Buffer): Promise<StoredFile>;
   read(storageKey: string): Promise<Buffer>;
+  delete(storageKey: string): Promise<void>;
 }
 
 class LocalStorage implements Storage {
@@ -25,6 +26,11 @@ class LocalStorage implements Storage {
 
   async read(storageKey: string): Promise<Buffer> {
     return fs.readFile(path.join(env.localUploadDir, storageKey));
+  }
+
+  async delete(storageKey: string): Promise<void> {
+    // Ignore ENOENT so a missing file doesn't block removing the DB row.
+    await fs.rm(path.join(env.localUploadDir, storageKey), { force: true });
   }
 }
 
@@ -48,6 +54,12 @@ class GcsStorage implements Storage {
     const bucket = await this.bucket();
     const [contents] = await bucket.file(storageKey).download();
     return contents;
+  }
+
+  async delete(storageKey: string): Promise<void> {
+    const bucket = await this.bucket();
+    // ignoreNotFound so a missing object doesn't block removing the DB row.
+    await bucket.file(storageKey).delete({ ignoreNotFound: true });
   }
 }
 

@@ -77,8 +77,8 @@ export async function updateContract(orgId: string, id: string, payload: Contrac
   if (existing.status !== "DRAFT") {
     throw conflict("Only DRAFT contracts can be edited");
   }
-  return prisma.$transaction(async (tx) => {
-    const updated = await tx.contract.update({
+  const updated = await prisma.$transaction(async (tx) => {
+    const c = await tx.contract.update({
       where: { id },
       data: {
         clientName: payload.client_name,
@@ -96,8 +96,12 @@ export async function updateContract(orgId: string, id: string, payload: Contrac
         after: payload as unknown as Prisma.InputJsonValue,
       },
     });
-    return updated;
+    return c;
   });
+  // Carry the full row so list tabs can patch just this contract in place
+  // instead of refetching and rerendering the whole table.
+  emitToOrg(orgId, "contract:updated", { id: updated.id, status: updated.status, contract: updated });
+  return updated;
 }
 
 // Enforce the DRAFT -> FINALIZED -> ARCHIVED workflow; invalid moves throw 409.
@@ -117,7 +121,7 @@ export async function changeStatus(orgId: string, id: string, to: ContractStatus
     });
     return c;
   });
-  emitToOrg(orgId, "contract:updated", { id: updated.id, status: updated.status });
+  emitToOrg(orgId, "contract:updated", { id: updated.id, status: updated.status, contract: updated });
   return updated;
 }
 
